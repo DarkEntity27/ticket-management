@@ -1,65 +1,77 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { createContext, useContext, useState, useEffect } from 'react'
+import axios from 'axios'
 
-const AuthContext = createContext();
+const AuthContext = createContext(null)
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    checkAuth()
+  }, [])
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get('/api/v1/auth/me', { withCredentials: true });
-      if (response.data.success) {
-        setUser(response.data.user);
+      const { data } = await axios.get('/api/v1/auth/me')
+      if (data.success) {
+        setUser(data.user)
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Auth check failed:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const login = async (credentials) => {
-    const response = await axios.post('/api/v1/auth/login', credentials, { withCredentials: true });
-    if (response.data.success) {
-      setUser(response.data.user);
+    const { data } = await axios.post('/api/v1/auth/login', credentials)
+    if (data.success) {
+      setUser(data.user)
     }
-    return response.data;
-  };
+    return data
+  }
 
   const register = async (userData) => {
-    const response = await axios.post('/api/v1/auth/register', userData, { withCredentials: true });
-    if (response.data.success) {
-      setUser(response.data.user);
+    const { data } = await axios.post('/api/v1/auth/register', userData)
+    if (data.success) {
+      setUser(data.user)
     }
-    return response.data;
-  };
+    return data
+  }
 
   const logout = async () => {
-    await axios.post('/api/v1/auth/logout', {}, { withCredentials: true });
-    setUser(null);
-  };
-
-  const updateProfile = async (data) => {
-    const response = await axios.put('/api/v1/auth/update-profile', data, { withCredentials: true });
-    if (response.data.success) {
-      setUser(response.data.user);
+    const { data } = await axios.post('/api/v1/auth/logout')
+    if (data.success) {
+      setUser(null)
     }
-    return response.data;
-  };
+    return data
+  }
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+  const updateProfile = async (userData) => {
+    const { data } = await axios.put('/api/v1/auth/update-profile', userData)
+    if (data.success) {
+      setUser(data.user)
+    }
+    return data
+  }
 
-export function useAuth() {
-  return useContext(AuthContext);
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    updateProfile,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
